@@ -1,0 +1,11 @@
+*.xcodeproj
+*.xcworkspace
+.DS_Store
+.build/
+.swiftpm/
+CLAUDE.md
+DerivedData/
+Package.resolved
+ResticStatus.app
+result
+xcuserdata/
