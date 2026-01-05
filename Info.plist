@@ -24,5 +24,16 @@
     <true/>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.resticstatus.app</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>resticstatus</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>

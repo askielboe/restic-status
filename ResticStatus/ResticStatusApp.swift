@@ -38,19 +38,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel.onProgressUpdate = { [weak self] progress, profileId in
             self?.menuController.updateProgress(progress, for: profileId)
         }
-
-        handleLaunchArguments()
     }
 
-    private func handleLaunchArguments() {
-        let args = CommandLine.arguments
-        guard let triggerIndex = args.firstIndex(of: "--trigger-backup"),
-              triggerIndex + 1 < args.count
-        else {
-            return
+    func application(_: NSApplication, open urls: [URL]) {
+        for url in urls {
+            handleURL(url)
         }
+    }
 
-        let profileIdString = args[triggerIndex + 1]
+    private func handleURL(_ url: URL) {
+        guard url.scheme == "resticstatus",
+              url.host == "trigger-backup"
+        else { return }
+
+        let profileIdString = url.lastPathComponent
         guard let profileId = UUID(uuidString: profileIdString),
               let profile = viewModel.profiles.first(where: { $0.id == profileId })
         else {

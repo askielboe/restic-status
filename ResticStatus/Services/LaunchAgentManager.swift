@@ -91,14 +91,13 @@ enum LaunchAgentManager {
     }
 
     private static func buildPlist(for profileId: UUID, intervals: [[String: Int]]) -> [String: Any] {
-        let executablePath = Bundle.main.executableURL?.path ?? "/Applications/ResticStatus.app/Contents/MacOS/ResticStatus"
+        let urlString = "resticstatus://trigger-backup/\(profileId.uuidString)"
 
         var plist: [String: Any] = [
             "Label": label(for: profileId),
             "ProgramArguments": [
-                executablePath,
-                "--trigger-backup",
-                profileId.uuidString,
+                "/usr/bin/open",
+                urlString,
             ],
             "RunAtLoad": false,
         ]
