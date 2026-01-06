@@ -147,6 +147,15 @@ class StatusMenuController: NSObject, NSMenuDelegate {
         rebuildProfileItems()
     }
 
+    func menuWillOpen(_ menu: NSMenu) {
+        guard let viewModel = viewModel else { return }
+        for profile in viewModel.profiles {
+            if let item = profileMenuItems[profile.id] {
+                updateProfileMenuItemTitle(item, for: profile)
+            }
+        }
+    }
+
     @objc private func openSettings() {
         SettingsWindowController.shared.show()
     }
