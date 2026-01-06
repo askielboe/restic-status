@@ -5,11 +5,9 @@ struct ResticStatusApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        Window("Hidden", id: "hidden") {
+        Settings {
             EmptyView()
         }
-        .defaultLaunchBehavior(.suppressed)
-        .restorationBehavior(.disabled)
         .commands {
             CommandGroup(replacing: .appSettings) {
                 Button("Settings...") {
