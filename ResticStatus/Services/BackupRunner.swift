@@ -31,6 +31,10 @@ actor BackupRunner {
     ) async throws -> BackupResult {
         let logHandle = try LogService.createLogFile(for: profileId)
 
+        if settings.unlockBeforeBackup {
+            await runUnlock(resticProfile: resticProfile, settings: settings, logHandle: logHandle)
+        }
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: settings.resticprofilePath)
         process.arguments = [
@@ -242,5 +246,35 @@ actor BackupRunner {
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
         return !process.isRunning
+    }
+
+    private func runUnlock(
+        resticProfile: ResticProfile,
+        settings: DefaultBackupSettings,
+        logHandle: FileHandle
+    ) async {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: settings.resticprofilePath)
+        process.arguments = [
+            "--config", resticProfile.configPath,
+            "\(resticProfile.name).unlock",
+        ]
+
+        let commandString = (process.executableURL?.path ?? "") + " " + (process.arguments ?? []).joined(separator: " ") + "\n"
+        try? logHandle.write(contentsOf: Data(commandString.utf8))
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            try? logHandle.write(contentsOf: data)
+            try? logHandle.write(contentsOf: Data("\n".utf8))
+        } catch {
+            try? logHandle.write(contentsOf: Data("Unlock failed: \(error)\n\n".utf8))
+        }
     }
 }

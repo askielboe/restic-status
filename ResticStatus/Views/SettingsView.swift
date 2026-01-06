@@ -60,6 +60,7 @@ struct GeneralSettingsView: View {
             }
 
             Section("Backup Options") {
+                Toggle("Unlock repository before backup", isOn: $settings.unlockBeforeBackup)
                 Toggle("Cleanup cache after backup", isOn: $settings.cleanupCache)
                 Toggle("Exclude cache directories", isOn: $settings.excludeCaches)
                 Toggle("Stay on one file system", isOn: $settings.oneFileSystem)
@@ -73,6 +74,7 @@ struct GeneralSettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .onChange(of: settings.unlockBeforeBackup) { _, _ in saveSettings() }
         .onChange(of: settings.cleanupCache) { _, _ in saveSettings() }
         .onChange(of: settings.excludeCaches) { _, _ in saveSettings() }
         .onChange(of: settings.oneFileSystem) { _, _ in saveSettings() }

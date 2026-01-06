@@ -4,6 +4,7 @@ struct DefaultBackupSettings: Codable, Equatable {
     var cleanupCache: Bool
     var excludeCaches: Bool
     var oneFileSystem: Bool
+    var unlockBeforeBackup: Bool
     var resticprofilePath: String
     var configPath: String
 
@@ -11,6 +12,7 @@ struct DefaultBackupSettings: Codable, Equatable {
         cleanupCache: true,
         excludeCaches: true,
         oneFileSystem: true,
+        unlockBeforeBackup: false,
         resticprofilePath: discoverResticprofilePath() ?? "",
         configPath: discoverConfigPath() ?? ""
     )
