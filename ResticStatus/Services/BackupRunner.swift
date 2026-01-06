@@ -121,7 +121,7 @@ actor BackupRunner {
         let error: String?
     }
 
-    private func readOutput(
+    private nonisolated func readOutput(
         from handle: FileHandle,
         logHandle: FileHandle,
         onProgress: (@Sendable (BackupProgress) -> Void)?
@@ -132,7 +132,11 @@ actor BackupRunner {
         var lastNonJsonLine: String?
 
         while true {
-            let data = handle.availableData
+            let data = await withCheckedContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    continuation.resume(returning: handle.availableData)
+                }
+            }
             if data.isEmpty { break }
 
             try? logHandle.write(contentsOf: data)
