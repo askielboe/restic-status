@@ -202,9 +202,41 @@ actor BackupRunner {
         return false
     }
 
-    func cancelBackup(for profileId: String) {
-        if let process = runningProcesses[profileId], process.isRunning {
-            process.terminate()
+    func cancelBackup(for profileId: String) async {
+        guard let process = runningProcesses[profileId], process.isRunning else { return }
+        await gracefullyTerminate(process: process)
+    }
+
+    func cancelAllBackups() async {
+        let processes = runningProcesses.values.filter { $0.isRunning }
+        await withTaskGroup(of: Void.self) { group in
+            for process in processes {
+                group.addTask {
+                    await self.gracefullyTerminate(process: process)
+                }
+            }
         }
+    }
+
+    private func gracefullyTerminate(process: Process) async {
+        let pid = process.processIdentifier
+
+        kill(pid, SIGINT)
+
+        if await waitForExit(process: process, timeout: 5.0) { return }
+
+        kill(pid, SIGTERM)
+
+        if await waitForExit(process: process, timeout: 3.0) { return }
+
+        kill(pid, SIGKILL)
+    }
+
+    private func waitForExit(process: Process, timeout: TimeInterval) async -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while process.isRunning && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        return !process.isRunning
     }
 }

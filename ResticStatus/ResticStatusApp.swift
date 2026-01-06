@@ -30,6 +30,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard viewModel.isAnyBackupRunning else { return .terminateNow }
+
+        Task {
+            await viewModel.cancelAllBackups()
+            await MainActor.run {
+                sender.reply(toApplicationShouldTerminate: true)
+            }
+        }
+        return .terminateLater
+    }
+
     func applicationDidFinishLaunching(_: Notification) {
         NSApp.setActivationPolicy(.accessory)
 

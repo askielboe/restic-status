@@ -208,6 +208,10 @@ class AppViewModel: ObservableObject {
         }
     }
 
+    func cancelAllBackups() async {
+        await backupRunner.cancelAllBackups()
+    }
+
     func setLaunchAtLogin(_ enabled: Bool) {
         do {
             if enabled {
