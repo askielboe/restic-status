@@ -34,6 +34,17 @@ class AppViewModel: ObservableObject {
                 self?.loadPersistedResults()
             }
             .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .profileWillChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                guard let self,
+                      let profileId = notification.object as? UUID,
+                      let profile = self.profiles.first(where: { $0.id == profileId })
+                else { return }
+                self.cancelBackup(for: profile)
+            }
+            .store(in: &cancellables)
     }
 
     private func loadResticProfiles() {

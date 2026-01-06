@@ -2,6 +2,7 @@ import Foundation
 
 extension Notification.Name {
     static let profilesDidChange = Notification.Name("profilesDidChange")
+    static let profileWillChange = Notification.Name("profileWillChange")
 }
 
 enum ProfileStore {
@@ -32,6 +33,7 @@ enum ProfileStore {
     }
 
     static func remove(id: UUID) {
+        NotificationCenter.default.post(name: .profileWillChange, object: id)
         var current = profiles
         current.removeAll { $0.id == id }
         profiles = current
@@ -39,6 +41,7 @@ enum ProfileStore {
     }
 
     static func update(_ profile: Profile) {
+        NotificationCenter.default.post(name: .profileWillChange, object: profile.id)
         var current = profiles
         if let index = current.firstIndex(where: { $0.id == profile.id }) {
             current[index] = profile
