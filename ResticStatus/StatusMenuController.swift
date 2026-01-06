@@ -85,12 +85,14 @@ class StatusMenuController: NSObject, NSMenuDelegate {
     private func startIconAnimation() {
         guard animationTimer == nil else { return }
         animationAngle = 0
-        animationTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
                 self.updateAnimationFrame()
             }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        animationTimer = timer
     }
 
     private func stopIconAnimation() {
