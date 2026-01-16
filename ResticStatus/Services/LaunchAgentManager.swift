@@ -97,6 +97,7 @@ enum LaunchAgentManager {
             "Label": label(for: profileId),
             "ProgramArguments": [
                 "/usr/bin/open",
+                "-g",
                 urlString,
             ],
             "RunAtLoad": false,
