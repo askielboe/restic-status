@@ -44,32 +44,46 @@ struct DefaultBackupSettings: Equatable {
     }
 
     static func discoverConfigPath(resticprofilePath: String? = nil) -> String? {
+        // Try resticprofile -v show first
         let execPath = resticprofilePath ?? discoverResticprofilePath()
-        guard let execPath = execPath, !execPath.isEmpty else { return nil }
+        if let execPath = execPath, !execPath.isEmpty {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: execPath)
+            process.arguments = ["-v", "show"]
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: execPath)
-        process.arguments = ["-v", "show"]
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = pipe
 
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            return nil
+            if let _ = try? process.run() {
+                process.waitUntilExit()
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                if let output = String(data: data, encoding: .utf8) {
+                    for line in output.components(separatedBy: .newlines) {
+                        if line.contains("loading:") {
+                            let parts = line.components(separatedBy: "loading:")
+                            if parts.count > 1 {
+                                return parts[1].trimmingCharacters(in: .whitespaces)
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        guard let output = String(data: data, encoding: .utf8) else { return nil }
+        // Fall back to checking common config locations
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
+        let configNames = ["profiles.yaml", "profiles.yml", "profiles.toml", "profiles.conf"]
+        let searchDirs = [
+            "\(homeDir)/.config/resticprofile",
+            "\(homeDir)/.config/restic",
+        ]
 
-        for line in output.components(separatedBy: .newlines) {
-            if line.contains("loading:") {
-                let parts = line.components(separatedBy: "loading:")
-                if parts.count > 1 {
-                    return parts[1].trimmingCharacters(in: .whitespaces)
+        for dir in searchDirs {
+            for name in configNames {
+                let candidate = (dir as NSString).appendingPathComponent(name)
+                if FileManager.default.fileExists(atPath: candidate) {
+                    return candidate
                 }
             }
         }

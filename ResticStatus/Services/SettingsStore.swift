@@ -6,10 +6,28 @@ enum SettingsStore {
     static var settings: DefaultBackupSettings {
         get {
             guard let data = UserDefaults.standard.data(forKey: userDefaultsKey),
-                  let settings = try? JSONDecoder().decode(DefaultBackupSettings.self, from: data)
+                  var settings = try? JSONDecoder().decode(DefaultBackupSettings.self, from: data)
             else {
                 return .default
             }
+
+            var changed = false
+            if settings.resticprofilePath.isEmpty,
+               let path = DefaultBackupSettings.discoverResticprofilePath()
+            {
+                settings.resticprofilePath = path
+                changed = true
+            }
+            if settings.configPath.isEmpty,
+               let path = DefaultBackupSettings.discoverConfigPath(resticprofilePath: settings.resticprofilePath)
+            {
+                settings.configPath = path
+                changed = true
+            }
+            if changed {
+                self.settings = settings
+            }
+
             return settings
         }
         set {
