@@ -36,8 +36,10 @@ actor BackupRunner {
         }
 
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: settings.resticprofilePath)
+        process.executableURL = URL(fileURLWithPath: "/usr/sbin/taskpolicy")
         process.arguments = [
+            "-b",
+            settings.resticprofilePath,
             "--config", resticProfile.configPath,
             "\(resticProfile.name).backup",
             "--json",
@@ -254,8 +256,10 @@ actor BackupRunner {
         logHandle: FileHandle
     ) async {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: settings.resticprofilePath)
+        process.executableURL = URL(fileURLWithPath: "/usr/sbin/taskpolicy")
         process.arguments = [
+            "-b",
+            settings.resticprofilePath,
             "--config", resticProfile.configPath,
             "\(resticProfile.name).unlock",
         ]
