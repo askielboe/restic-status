@@ -64,6 +64,11 @@ struct GeneralSettingsView: View {
                 Toggle("Cleanup cache after backup", isOn: $settings.cleanupCache)
                 Toggle("Exclude cache directories", isOn: $settings.excludeCaches)
                 Toggle("Stay on one file system", isOn: $settings.oneFileSystem)
+                Stepper(
+                    "Max concurrent backups: \(settings.maxConcurrentBackups)",
+                    value: $settings.maxConcurrentBackups,
+                    in: 1...10
+                )
             }
 
             Section {
@@ -78,6 +83,7 @@ struct GeneralSettingsView: View {
         .onChange(of: settings.cleanupCache) { _, _ in saveSettings() }
         .onChange(of: settings.excludeCaches) { _, _ in saveSettings() }
         .onChange(of: settings.oneFileSystem) { _, _ in saveSettings() }
+        .onChange(of: settings.maxConcurrentBackups) { _, _ in saveSettings() }
     }
 }
 

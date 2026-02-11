@@ -155,6 +155,13 @@ class AppViewModel: ObservableObject {
             return
         }
 
+        let runningCount = profiles.filter { $0.status.state == .running }.count
+        let maxConcurrent = SettingsStore.settings.maxConcurrentBackups
+        if runningCount >= maxConcurrent {
+            print("Skipping backup for \(profile.name): \(runningCount) backup(s) already running (limit: \(maxConcurrent))")
+            return
+        }
+
         profiles[index].status.state = .running
         profiles[index].status.lastBackupTime = Date()
         updateRunningState()

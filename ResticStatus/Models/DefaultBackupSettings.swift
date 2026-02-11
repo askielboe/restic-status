@@ -7,6 +7,7 @@ struct DefaultBackupSettings: Codable, Equatable {
     var unlockBeforeBackup: Bool
     var resticprofilePath: String
     var configPath: String
+    var maxConcurrentBackups: Int
 
     static let `default` = DefaultBackupSettings(
         cleanupCache: true,
@@ -14,7 +15,8 @@ struct DefaultBackupSettings: Codable, Equatable {
         oneFileSystem: true,
         unlockBeforeBackup: false,
         resticprofilePath: discoverResticprofilePath() ?? "",
-        configPath: discoverConfigPath() ?? ""
+        configPath: discoverConfigPath() ?? "",
+        maxConcurrentBackups: 1
     )
 
     static func discoverResticprofilePath() -> String? {
