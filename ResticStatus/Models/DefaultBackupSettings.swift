@@ -1,6 +1,6 @@
 import Foundation
 
-struct DefaultBackupSettings: Codable, Equatable {
+struct DefaultBackupSettings: Equatable {
     var cleanupCache: Bool
     var excludeCaches: Bool
     var oneFileSystem: Bool
@@ -75,6 +75,24 @@ struct DefaultBackupSettings: Codable, Equatable {
         }
 
         return nil
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case cleanupCache, excludeCaches, oneFileSystem, unlockBeforeBackup
+        case resticprofilePath, configPath, maxConcurrentBackups
+    }
+}
+
+extension DefaultBackupSettings: Codable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        cleanupCache = try container.decode(Bool.self, forKey: .cleanupCache)
+        excludeCaches = try container.decode(Bool.self, forKey: .excludeCaches)
+        oneFileSystem = try container.decode(Bool.self, forKey: .oneFileSystem)
+        unlockBeforeBackup = try container.decode(Bool.self, forKey: .unlockBeforeBackup)
+        resticprofilePath = try container.decode(String.self, forKey: .resticprofilePath)
+        configPath = try container.decode(String.self, forKey: .configPath)
+        maxConcurrentBackups = try container.decodeIfPresent(Int.self, forKey: .maxConcurrentBackups) ?? 1
     }
 
     var resticArguments: [String] {
