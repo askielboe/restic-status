@@ -189,6 +189,7 @@ struct ProfileDetailView: View {
 
     @State private var editingScheduleIndex: Int?
     @State private var editingScheduleText: String = ""
+    @State private var showingCronHelp = false
     @FocusState private var focusedScheduleIndex: Int?
 
     var body: some View {
@@ -245,6 +246,15 @@ struct ProfileDetailView: View {
             } header: {
                 HStack {
                     Text("Schedules")
+                    Button {
+                        showingCronHelp.toggle()
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                    }
+                    .buttonStyle(.borderless)
+                    .popover(isPresented: $showingCronHelp) {
+                        CronHelpView()
+                    }
                     Spacer()
                     Button(action: addSchedule) {
                         Image(systemName: "plus")
@@ -328,6 +338,104 @@ struct ScheduleRowView: View {
             }
         }
         .contentShape(Rectangle())
+    }
+}
+
+struct CronHelpView: View {
+    private let fields = [
+        ("minute", "0-59"),
+        ("hour", "0-23"),
+        ("day", "1-31"),
+        ("month", "1-12"),
+        ("weekday", "0-6 (Sun-Sat)"),
+    ]
+
+    private let examples = [
+        ("0 * * * *", "Every hour"),
+        ("*/15 * * * *", "Every 15 minutes"),
+        ("30 2 * * *", "Daily at 2:30 AM"),
+        ("0 9 * * 1-5", "Weekdays at 9 AM"),
+        ("0 0 * * 0", "Weekly on Sunday"),
+        ("0 0 1 * *", "First of every month"),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Cron Schedule Syntax")
+                .font(.headline)
+
+            HStack(spacing: 4) {
+                ForEach(fields, id: \.0) { name, _ in
+                    Text(name)
+                        .font(.caption.monospaced())
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 2)
+                        .background(.quaternary)
+                        .cornerRadius(4)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(fields, id: \.0) { name, range in
+                    HStack {
+                        Text(name)
+                            .fontWeight(.medium)
+                            .frame(width: 70, alignment: .leading)
+                        Text(range)
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.caption)
+                }
+            }
+
+            Divider()
+
+            Text("Special characters")
+                .font(.subheadline.weight(.medium))
+
+            VStack(alignment: .leading, spacing: 2) {
+                CronHelpRow(symbol: "*", meaning: "Any value")
+                CronHelpRow(symbol: "*/n", meaning: "Every n units")
+                CronHelpRow(symbol: "a-b", meaning: "Range from a to b")
+                CronHelpRow(symbol: "a,b", meaning: "Specific values")
+            }
+
+            Divider()
+
+            Text("Examples")
+                .font(.subheadline.weight(.medium))
+
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(examples, id: \.0) { expression, description in
+                    HStack {
+                        Text(expression)
+                            .font(.caption.monospaced())
+                            .frame(width: 100, alignment: .leading)
+                        Text(description)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .padding()
+        .frame(width: 280)
+    }
+}
+
+private struct CronHelpRow: View {
+    let symbol: String
+    let meaning: String
+
+    var body: some View {
+        HStack {
+            Text(symbol)
+                .font(.caption.monospaced())
+                .frame(width: 40, alignment: .leading)
+            Text(meaning)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 
