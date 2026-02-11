@@ -18,5 +18,10 @@ let package = Package(
             dependencies: ["Yams"],
             path: "ResticStatus"
         ),
+        .testTarget(
+            name: "ResticStatusTests",
+            dependencies: ["ResticStatus"],
+            path: "Tests"
+        ),
     ]
 )
