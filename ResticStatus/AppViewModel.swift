@@ -9,11 +9,19 @@ class AppViewModel: ObservableObject {
     @Published var isAnyBackupRunning: Bool = false
     @Published var menuBarIcon: String = "arrow.clockwise.circle.fill"
     @Published var launchAtLogin: Bool = false
+    @Published var pausedUntil: Date? = nil
 
     var onProgressUpdate: ((BackupProgress, String) -> Void)?
 
+    /// Whether backups are currently paused.
+    var isPaused: Bool {
+        guard let pausedUntil else { return false }
+        return Date() < pausedUntil
+    }
+
     private let backupRunner = BackupRunner()
     private let resultsKey = "BackupResults"
+    private let pausedUntilKey = "PausedUntil"
     private var storedResults: [String: BackupResult] = [:]
     private var resticProfiles: [ResticProfile] = []
     private var cancellables = Set<AnyCancellable>()
@@ -22,6 +30,7 @@ class AppViewModel: ObservableObject {
         loadResticProfiles()
         loadProfiles()
         loadPersistedResults()
+        loadPersistedPauseState()
         launchAtLogin = SMAppService.mainApp.status == .enabled
         observeProfileChanges()
     }
@@ -137,7 +146,9 @@ class AppViewModel: ObservableObject {
     }
 
     private func updateMenuBarIcon() {
-        if isAnyBackupRunning {
+        if isPaused {
+            menuBarIcon = "pause.circle"
+        } else if isAnyBackupRunning {
             menuBarIcon = "arrow.triangle.2.circlepath"
         } else if profiles.contains(where: { $0.status.state == .failed }) {
             menuBarIcon = "exclamationmark.circle"
@@ -149,6 +160,11 @@ class AppViewModel: ObservableObject {
     }
 
     func triggerBackup(for profile: Profile) {
+        if isPaused {
+            print("Skipping backup for \(profile.name): backups are paused until \(pausedUntil!)")
+            return
+        }
+
         guard let index = profiles.firstIndex(where: { $0.id == profile.id }) else { return }
         guard let resticProfile = resticProfiles.first(where: { $0.id == profile.resticProfileId }) else {
             print("Restic profile not found: \(profile.resticProfileId)")
@@ -232,7 +248,40 @@ class AppViewModel: ObservableObject {
         }
     }
 
+    /// Pauses all scheduled backups for the given duration.
+    func pauseBackups(for duration: TimeInterval) {
+        pausedUntil = Date().addingTimeInterval(duration)
+        persistPauseState()
+        updateMenuBarIcon()
+    }
+
+    /// Resumes backups by clearing the pause timer.
+    func resumeBackups() {
+        pausedUntil = nil
+        persistPauseState()
+        updateMenuBarIcon()
+    }
+
     func viewLogs(for profile: Profile) {
         LogService.openLog(for: profile.id.uuidString, profileName: profile.name)
+    }
+
+    private func loadPersistedPauseState() {
+        if let date = UserDefaults.standard.object(forKey: pausedUntilKey) as? Date {
+            if Date() < date {
+                pausedUntil = date
+            } else {
+                UserDefaults.standard.removeObject(forKey: pausedUntilKey)
+            }
+        }
+        updateMenuBarIcon()
+    }
+
+    private func persistPauseState() {
+        if let pausedUntil {
+            UserDefaults.standard.set(pausedUntil, forKey: pausedUntilKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: pausedUntilKey)
+        }
     }
 }

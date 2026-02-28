@@ -15,6 +15,7 @@ class StatusMenuController: NSObject, NSMenuDelegate {
     private var filesItems: [UUID: NSMenuItem] = [:]
     private var emptyStateItems: [NSMenuItem] = []
     private var configWarningItems: [NSMenuItem] = []
+    private var pauseMenuItem: NSMenuItem?
 
     private var animationTimer: Timer?
     private var animationAngle: CGFloat = 0
@@ -80,6 +81,13 @@ class StatusMenuController: NSObject, NSMenuDelegate {
                 }
             }
             .store(in: &cancellables)
+
+        viewModel?.$pausedUntil
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updatePauseMenuItem()
+            }
+            .store(in: &cancellables)
     }
 
     private func startIconAnimation() {
@@ -134,6 +142,14 @@ class StatusMenuController: NSObject, NSMenuDelegate {
         guard let viewModel = viewModel else { return }
 
         menu.addItem(NSMenuItem.separator())
+
+        let pauseItem = NSMenuItem()
+        pauseItem.title = "Pause Backups"
+        pauseItem.submenu = buildPauseSubmenu()
+        menu.addItem(pauseItem)
+        pauseMenuItem = pauseItem
+
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(actionItem("Settings...", action: #selector(openSettings)))
 
         let launchItem = actionItem("Launch at Login", action: #selector(toggleLaunchAtLogin))
@@ -156,6 +172,7 @@ class StatusMenuController: NSObject, NSMenuDelegate {
                 updateProfileMenuItemTitle(item, for: profile)
             }
         }
+        updatePauseMenuItem()
     }
 
     @objc private func openSettings() {
@@ -363,8 +380,52 @@ class StatusMenuController: NSObject, NSMenuDelegate {
         viewModel.setLaunchAtLogin(!viewModel.launchAtLogin)
     }
 
+    @objc private func pauseBackups(_ sender: NSMenuItem) {
+        guard let duration = sender.representedObject as? TimeInterval else { return }
+        viewModel?.pauseBackups(for: duration)
+    }
+
+    @objc private func resumeBackups() {
+        viewModel?.resumeBackups()
+    }
+
     @objc private func quit() {
         NSApplication.shared.terminate(nil)
+    }
+
+    private func buildPauseSubmenu() -> NSMenu {
+        let submenu = NSMenu()
+        let durations: [(String, TimeInterval)] = [
+            ("1 Hour", 3600),
+            ("2 Hours", 7200),
+            ("4 Hours", 14400),
+            ("8 Hours", 28800),
+            ("24 Hours", 86400),
+        ]
+        for (title, duration) in durations {
+            let item = actionItem(title, action: #selector(pauseBackups(_:)))
+            item.representedObject = duration
+            submenu.addItem(item)
+        }
+        return submenu
+    }
+
+    private func updatePauseMenuItem() {
+        guard let pauseItem = pauseMenuItem, let viewModel = viewModel else { return }
+        if viewModel.isPaused, let pausedUntil = viewModel.pausedUntil {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .none
+            formatter.timeStyle = .short
+            pauseItem.title = "Paused until \(formatter.string(from: pausedUntil))"
+
+            let submenu = buildPauseSubmenu()
+            submenu.insertItem(actionItem("Resume Backups", action: #selector(resumeBackups)), at: 0)
+            submenu.insertItem(NSMenuItem.separator(), at: 1)
+            pauseItem.submenu = submenu
+        } else {
+            pauseItem.title = "Pause Backups"
+            pauseItem.submenu = buildPauseSubmenu()
+        }
     }
 
     private func withProfile(from sender: NSMenuItem, perform action: (Profile) -> Void) {
